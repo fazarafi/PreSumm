@@ -328,6 +328,7 @@ class Translator(object):
 
             # Append last prediction.
             self.logger.info("[DEBUG] Select Indices: " + str(select_indices))
+            self.logger.info("[DEBUG] TYPE Select Indices: " + str(type(select_indices)))
             alive_seq = torch.cat(
                 [alive_seq.index_select(0, select_indices),
                  topk_ids.view(-1, 1)], -1)
