@@ -162,6 +162,7 @@ def validate_abs(args, device_id):
                 if (time_of_cp > timestep):
                     continue
             else:
+                print("Sleep")
                 time.sleep(300)
 
 
