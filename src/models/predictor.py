@@ -12,6 +12,8 @@ from tensorboardX import SummaryWriter
 from others.utils import rouge_results_to_str, test_rouge, tile
 from translate.beam import GNMTGlobalScorer
 
+import logging
+logger = logging.getLogger(__name__)
 
 def build_predictor(args, tokenizer, symbols, model, logger=None):
     scorer = GNMTGlobalScorer(args.alpha,length_penalty='wu')
@@ -303,6 +305,7 @@ class Translator(object):
                         words = ' '.join(words).replace(' ##','').split()
                         if(len(words)<=3):
                             continue
+                        logger.info("[DEBUG FT] Words: " + str(words)+ " \n")
                         trigrams = [(words[i-1],words[i],words[i+1]) for i in range(1,len(words)-1)]
                         trigram = tuple(trigrams[-1])
                         if trigram in trigrams[:-1]:
@@ -373,6 +376,7 @@ class Translator(object):
             dec_states.map_batch_fn(
                 lambda state, dim: state.index_select(dim, select_indices))
 
+        logger.info("[DEBUG FT] results for fast_translation: \n" + str(results) + "\n END RESULT")
         return results
 
 
