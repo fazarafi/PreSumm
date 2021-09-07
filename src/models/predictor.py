@@ -147,6 +147,7 @@ class Translator(object):
         # pred_results, gold_results = [], []
         ct = 0
         with torch.no_grad():
+            logger.info("[DEBUG FT] data_iter: " + str(len(data_iter)))
             for batch in data_iter:
                 if(self.args.recall_eval):
                     gold_tgt_len = batch.tgt.size(1)
