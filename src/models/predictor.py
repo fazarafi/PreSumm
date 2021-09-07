@@ -122,6 +122,9 @@ class Translator(object):
 
         return translations
 
+    def translate_single(self, src, pred):
+
+
     def translate(self,
                   data_iter, step,
                   attn_debug=False):
@@ -155,10 +158,10 @@ class Translator(object):
                     pred, gold, src = trans
                     pred_str = pred.replace('[unused0]', '').replace('[unused3]', '').replace('[PAD]', '').replace('[unused1]', '').replace(r' +', ' ').replace(' [unused2] ', '<q>').replace('[unused2]', '').strip()
                     gold_str = gold.strip()
-                    logger.info("[DEBUG FT] Src: " + str(src))
-                    logger.info("[DEBUG FT] Pred_str: " + str(pred_str))
-                    logger.info("[DEBUG FT] Gold_str: " + str(gold_str))
-                    logger.info("\n\n")
+                    # logger.info("[DEBUG FT] Src: " + str(src))
+                    # logger.info("[DEBUG FT] Pred_str: " + str(pred_str))
+                    # logger.info("[DEBUG FT] Gold_str: " + str(gold_str))
+                    # logger.info("\n\n")
                     if(self.args.recall_eval):
                         _pred_str = ''
                         gap = 1e3
