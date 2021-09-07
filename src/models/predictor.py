@@ -123,6 +123,7 @@ class Translator(object):
         return translations
 
     def translate_single(self, src, pred):
+        self.model.eval()
 
 
     def translate(self,
