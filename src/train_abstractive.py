@@ -219,14 +219,14 @@ def test_abs(args, device_id, pt, step):
     test_iter = data_loader.Dataloader(args, load_dataset(args, 'test', shuffle=False),
                                        args.test_batch_size, device,
                                        shuffle=False, is_test=True)
-    logger.info("[DEBUG FT] test_iter[0]: " + str(test_iter[0]))
-    logger.info("[DEBUG FT] test_iter[0][0]: " + str(test_iter[0][0]))
-    logger.info("[DEBUG FT] step: " + str(step))
-    logger.info("\n")
     tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True, cache_dir=args.temp_dir)
     symbols = {'BOS': tokenizer.vocab['[unused0]'], 'EOS': tokenizer.vocab['[unused1]'],
                'PAD': tokenizer.vocab['[PAD]'], 'EOQ': tokenizer.vocab['[unused2]']}
     predictor = build_predictor(args, tokenizer, symbols, model, logger)
+    logger.info("[DEBUG FT] test_iter: " + str(test_iter))
+    logger.info("[DEBUG FT] step: " + str(step))
+    logger.info("\n")
+    
     predictor.translate(test_iter, step)
 
 
