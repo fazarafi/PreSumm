@@ -150,12 +150,13 @@ class Translator(object):
                     self.max_length = gold_tgt_len + 60
                 batch_data = self.translate_batch(batch)
                 translations = self.from_batch(batch_data)
-                logger.info("[DEBUG FT] Translations: " + str(translations[0]))
 
                 for trans in translations:
                     pred, gold, src = trans
                     pred_str = pred.replace('[unused0]', '').replace('[unused3]', '').replace('[PAD]', '').replace('[unused1]', '').replace(r' +', ' ').replace(' [unused2] ', '<q>').replace('[unused2]', '').strip()
                     gold_str = gold.strip()
+                    logger.info("[DEBUG FT] Pred_str: " + str(pred_str))
+                    logger.info("[DEBUG FT] Gold_str: " + str(gold_str))
                     if(self.args.recall_eval):
                         _pred_str = ''
                         gap = 1e3
