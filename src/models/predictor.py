@@ -305,7 +305,6 @@ class Translator(object):
                         words = ' '.join(words).replace(' ##','').split()
                         if(len(words)<=3):
                             continue
-                        logger.info("[DEBUG FT] Words: " + str(words)+ " \n")
                         trigrams = [(words[i-1],words[i],words[i+1]) for i in range(1,len(words)-1)]
                         trigram = tuple(trigrams[-1])
                         if trigram in trigrams[:-1]:
@@ -342,6 +341,7 @@ class Translator(object):
             # Save finished hypotheses.
             if is_finished.any():
                 predictions = alive_seq.view(-1, beam_size, alive_seq.size(-1))
+                logger.info("[DEBUG FT] Predictions: " + str(predictions)+ " \n")
                 for i in range(is_finished.size(0)):
                     b = batch_offset[i]
                     if end_condition[i]:
