@@ -342,7 +342,6 @@ class Translator(object):
             # Save finished hypotheses.
             if is_finished.any():
                 predictions = alive_seq.view(-1, beam_size, alive_seq.size(-1))
-                logger.info("[DEBUG FT] Predictions: " + str(predictions)+ " \n")
                 for i in range(is_finished.size(0)):
                     b = batch_offset[i]
                     if end_condition[i]:
@@ -377,7 +376,6 @@ class Translator(object):
             dec_states.map_batch_fn(
                 lambda state, dim: state.index_select(dim, select_indices))
 
-        logger.info("[DEBUG FT] results for fast_translation: \n" + str(results) + "\n END RESULT")
         return results
 
 
