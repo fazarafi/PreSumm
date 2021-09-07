@@ -150,6 +150,7 @@ class Translator(object):
                     self.max_length = gold_tgt_len + 60
                 batch_data = self.translate_batch(batch)
                 translations = self.from_batch(batch_data)
+                logger.info("[DEBUG FT] Translations: " + str(translations[0]))
 
                 for trans in translations:
                     pred, gold, src = trans
