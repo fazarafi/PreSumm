@@ -163,7 +163,7 @@ class Translator(object):
                 translations = self.from_batch(batch_data)
 
                 for trans in translations:
-                    logger.info("[DEBUG FT] TRANSLATION: " + str(translation))
+                    logger.info("[DEBUG FT] TRANSLATIONS: " + str(translations))
                     logger.info("[DEBUG FT] TRANS: " + str(trans))
                     logger.info("\n")
                     pred, gold, src = trans
