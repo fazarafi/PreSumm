@@ -124,7 +124,14 @@ class Translator(object):
 
     def translate_single(self, src, pred):
         self.model.eval()
+        if(self.args.recall_eval):
+            gold_tgt_len = batch.tgt.size(1)
+            self.min_length = gold_tgt_len + 20
+            self.max_length = gold_tgt_len + 60
+        translated_data = self.translate_batch(batch)
+        translation = self.from_batch(batch_data)
 
+        return translation[0]
 
     def translate(self,
                   data_iter, step,
@@ -154,9 +161,11 @@ class Translator(object):
                     self.max_length = gold_tgt_len + 60
                 batch_data = self.translate_batch(batch)
                 translations = self.from_batch(batch_data)
-                logger.info("[DEBUG FT] translations: " + str(len(translations)))
 
                 for trans in translations:
+                    logger.info("[DEBUG FT] TRANSLATION: " + str(translation))
+                    logger.info("[DEBUG FT] TRANS: " + str(trans))
+                    logger.info("\n")
                     pred, gold, src = trans
                     pred_str = pred.replace('[unused0]', '').replace('[unused3]', '').replace('[PAD]', '').replace('[unused1]', '').replace(r' +', ' ').replace(' [unused2] ', '<q>').replace('[unused2]', '').strip()
                     gold_str = gold.strip()
