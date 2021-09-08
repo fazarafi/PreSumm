@@ -122,16 +122,18 @@ class Translator(object):
 
         return translations
 
-    def translate_single(self, src, pred):
+    def translate_single(self, src, step):
         self.model.eval()
         if(self.args.recall_eval):
             gold_tgt_len = batch.tgt.size(1)
             self.min_length = gold_tgt_len + 20
             self.max_length = gold_tgt_len + 60
         translated_data = self.translate_batch(batch)
-        translation = self.from_batch(batch_data)
+        translation = self.from_batch(translated_data)
+        pred, gold, src = translation[0]
+        self.logger.info("Translate single on step %d \n", step)
 
-        return translation[0]
+        return pred
 
     def translate(self,
                   data_iter, step,
@@ -155,6 +157,7 @@ class Translator(object):
         ct = 0
         with torch.no_grad():
             for batch in data_iter:
+                logger.info("[DEBUG FT] BATCH: " + str(batch))
                 if(self.args.recall_eval):
                     gold_tgt_len = batch.tgt.size(1)
                     self.min_length = gold_tgt_len + 20
