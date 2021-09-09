@@ -230,6 +230,45 @@ def test_abs(args, device_id, pt, step):
     predictor.translate(test_iter, step)
 
 
+def test_abs_single(args, src, pt, step):
+    device = "cpu" if args.visible_gpus == '-1' else "cuda"
+    if (pt != ''):
+        test_from = pt
+    else:
+        test_from = args.test_from
+    logger.info('Loading checkpoint from %s' % test_from)
+
+    checkpoint = torch.load(test_from, map_location=lambda storage, loc: storage)
+    opt = vars(checkpoint['opt'])
+    for k in opt.keys():
+        if (k in model_flags):
+            setattr(args, k, opt[k])
+    print(args)
+
+    model = AbsSummarizer(args, device, checkpoint)
+    model.eval()
+
+    batch_data[0] = [0] # pre_src
+    batch_data[1] = [0] # pre_tgt
+    batch_data[2] = [0] # pre_segs
+    batch_data[3] = [0] # pre_clss
+    batch_data[4] = [0] # pre_src_sent_labels
+
+    batch = data_loader.Batch(batch_data, device, shuffle=False, is_test=True)
+    test_iter = data_loader.Dataloader(args, load_dataset(args, 'test', shuffle=False),
+                                       args.test_batch_size, device,
+                                       shuffle=False, is_test=True)
+
+    tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True, cache_dir=args.temp_dir)
+    symbols = {'BOS': tokenizer.vocab['[unused0]'], 'EOS': tokenizer.vocab['[unused1]'],
+               'PAD': tokenizer.vocab['[PAD]'], 'EOQ': tokenizer.vocab['[unused2]']}
+    predictor = build_predictor(args, tokenizer, symbols, model, logger)
+    logger.info("\n")
+    
+    result = predictor.translate_single(batch, step) 
+    logger.info("[DEBUG FT] result: " + str(result))
+
+
 def test_text_abs(args, device_id, pt, step):
     device = "cpu" if args.visible_gpus == '-1' else "cuda"
     if (pt != ''):

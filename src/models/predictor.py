@@ -122,7 +122,7 @@ class Translator(object):
 
         return translations
 
-    def translate_single(self, src, step):
+    def translate_single(self, batch, step):
         self.model.eval()
         if(self.args.recall_eval):
             gold_tgt_len = batch.tgt.size(1)
