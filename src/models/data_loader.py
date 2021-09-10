@@ -20,6 +20,9 @@ class Batch(object):
         """Create a Batch from a list of examples."""
         if data is not None:
             self.batch_size = len(data)
+            logger.info("============ DEBUG FT")
+            logger.info(data)
+
             pre_src = [x[0] for x in data]
             pre_tgt = [x[1] for x in data]
             pre_segs = [x[2] for x in data]
@@ -49,7 +52,15 @@ class Batch(object):
             setattr(self, 'mask_src', mask_src.to(device))
             setattr(self, 'mask_tgt', mask_tgt.to(device))
 
-            logger.info("[DEBUG FT] Batch: " + str(self) +"\n")
+            logger.info('[DEBUG FT] clss: ' + self.clss)
+            logger.info('[DEBUG FT] mask_cls: ' + self.mask_cls)
+            logger.info('[DEBUG FT] src_sent_labels: ' + self.src_sent_labels)
+
+            logger.info('[DEBUG FT] src: ' + self.src)
+            logger.info('[DEBUG FT] tgt: ' + self.tgt)
+            logger.info('[DEBUG FT] segs: ' + self.segs)
+            logger.info('[DEBUG FT] mask_src: ' + self.mask_src)
+            logger.info('[DEBUG FT] mask_tgt: ' + self.mask_tgt)
 
             if (is_test):
                 src_str = [x[-2] for x in data]
