@@ -157,7 +157,6 @@ class Translator(object):
         ct = 0
         with torch.no_grad():
             for batch in data_iter:
-                logger.info("[DEBUG FT] BATCH: " + str(batch))
                 if(self.args.recall_eval):
                     gold_tgt_len = batch.tgt.size(1)
                     self.min_length = gold_tgt_len + 20
@@ -166,8 +165,6 @@ class Translator(object):
                 translations = self.from_batch(batch_data)
 
                 for trans in translations:
-                    logger.info("[DEBUG FT] TRANSLATIONS: " + str(translations))
-                    logger.info("[DEBUG FT] TRANS: " + str(trans))
                     logger.info("\n")
                     pred, gold, src = trans
                     pred_str = pred.replace('[unused0]', '').replace('[unused3]', '').replace('[PAD]', '').replace('[unused1]', '').replace(r' +', ' ').replace(' [unused2] ', '<q>').replace('[unused2]', '').strip()

@@ -49,6 +49,7 @@ class Batch(object):
             setattr(self, 'mask_src', mask_src.to(device))
             setattr(self, 'mask_tgt', mask_tgt.to(device))
 
+            logger.info("[DEBUG FT] Batch: " + str(self) +"\n")
 
             if (is_test):
                 src_str = [x[-2] for x in data]

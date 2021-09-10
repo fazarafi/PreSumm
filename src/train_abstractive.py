@@ -230,7 +230,7 @@ def test_abs(args, device_id, pt, step):
     predictor.translate(test_iter, step)
 
 
-def test_abs_single(args, src, pt, step):
+def test_abs_single(args, src, device_id, pt, step):
     device = "cpu" if args.visible_gpus == '-1' else "cuda"
     if (pt != ''):
         test_from = pt
@@ -248,13 +248,7 @@ def test_abs_single(args, src, pt, step):
     model = AbsSummarizer(args, device, checkpoint)
     model.eval()
 
-    batch_data[0] = [0] # pre_src
-    batch_data[1] = [0] # pre_tgt
-    batch_data[2] = [0] # pre_segs
-    batch_data[3] = [0] # pre_clss
-    batch_data[4] = [0] # pre_src_sent_labels
-
-    batch = data_loader.Batch(batch_data, device, shuffle=False, is_test=True)
+    batch = data_loader.Batch(load_single_batch(src), device, shuffle=False, is_test=True)
     test_iter = data_loader.Dataloader(args, load_dataset(args, 'test', shuffle=False),
                                        args.test_batch_size, device,
                                        shuffle=False, is_test=True)
@@ -268,6 +262,17 @@ def test_abs_single(args, src, pt, step):
     result = predictor.translate_single(batch, step) 
     logger.info("[DEBUG FT] result: " + str(result))
 
+
+def load_single_batch(args, src):
+    batch_data = {}
+
+    batch_data[0] = [src] # pre_src
+    batch_data[1] = [0] # pre_tgt
+    batch_data[2] = [0] # pre_segs
+    batch_data[3] = [0] # pre_clss
+    batch_data[4] = [0] # pre_src_sent_labels
+
+    return batch_data
 
 def test_text_abs(args, device_id, pt, step):
     device = "cpu" if args.visible_gpus == '-1' else "cuda"
