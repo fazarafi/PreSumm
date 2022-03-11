@@ -20,8 +20,8 @@ class Batch(object):
         """Create a Batch from a list of examples."""
         if data is not None:
             self.batch_size = len(data)
-            logger.info("============ DEBUG FT")
-            logger.info(str(data))
+            # logger.info("============ DEBUG FT")
+            # logger.info(str(data))
 
             pre_src = [x[0] for x in data]
             pre_tgt = [x[1] for x in data]
@@ -52,15 +52,15 @@ class Batch(object):
             setattr(self, 'mask_src', mask_src.to(device))
             setattr(self, 'mask_tgt', mask_tgt.to(device))
 
-            logger.info('[DEBUG FT] clss: ' + str(self.clss))
-            logger.info('[DEBUG FT] mask_cls: ' + str(self.mask_cls))
-            logger.info('[DEBUG FT] src_sent_labels: ' + str(self.src_sent_labels))
+            # logger.info('[DEBUG FT] clss: ' + str(self.clss))
+            # logger.info('[DEBUG FT] mask_cls: ' + str(self.mask_cls))
+            # logger.info('[DEBUG FT] src_sent_labels: ' + str(self.src_sent_labels))
 
-            logger.info('[DEBUG FT] src: ' + str(self.src))
-            logger.info('[DEBUG FT] tgt: ' + str(self.tgt))
-            logger.info('[DEBUG FT] segs: ' + str(self.segs))
-            logger.info('[DEBUG FT] mask_src: ' + str(self.mask_src))
-            logger.info('[DEBUG FT] mask_tgt: ' + str(self.mask_tgt))
+            # logger.info('[DEBUG FT] src: ' + str(self.src))
+            # logger.info('[DEBUG FT] tgt: ' + str(self.tgt))
+            # logger.info('[DEBUG FT] segs: ' + str(self.segs))
+            # logger.info('[DEBUG FT] mask_src: ' + str(self.mask_src))
+            # logger.info('[DEBUG FT] mask_tgt: ' + str(self.mask_tgt))
 
             if (is_test):
                 src_str = [x[-2] for x in data]

@@ -223,8 +223,8 @@ def test_abs(args, device_id, pt, step):
     symbols = {'BOS': tokenizer.vocab['[unused0]'], 'EOS': tokenizer.vocab['[unused1]'],
                'PAD': tokenizer.vocab['[PAD]'], 'EOQ': tokenizer.vocab['[unused2]']}
     predictor = build_predictor(args, tokenizer, symbols, model, logger)
-    logger.info("[DEBUG FT] test_iter: " + str(test_iter))
-    logger.info("[DEBUG FT] step: " + str(step))
+    # logger.info("[DEBUG FT] test_iter: " + str(test_iter))
+    # logger.info("[DEBUG FT] step: " + str(step))
     logger.info("\n")
     
     predictor.translate(test_iter, step)
@@ -260,7 +260,7 @@ def test_abs_single(args, src, device_id, pt, step):
     logger.info("\n")
     
     result = predictor.translate_single(batch, step) 
-    logger.info("[DEBUG FT] result: " + str(result))
+    # logger.info("[DEBUG FT] result: " + str(result))
 
 
 def load_single_batch(args, src):
