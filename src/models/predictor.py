@@ -309,6 +309,9 @@ class Translator(object):
 
             alpha = self.global_scorer.alpha
             length_penalty = ((5.0 + (step + 1)) / 6.0) ** alpha
+            
+            # TODO Faza masukin fact caller buat penalty
+            fact_score = caller(decoder_input, source)
 
             # Flatten probs into a list of possibilities.
             curr_scores = log_probs / length_penalty
@@ -369,8 +372,11 @@ class Translator(object):
                         hypotheses[b].append((
                             topk_scores[i, j],
                             predictions[i, j, 1:]))
+                    # TODO Faza evaluate with fact scorer
                     # If the batch reached the end, save the n_best hypotheses.
                     if end_condition[i]:
+                        # TODO Faza order by fact score
+                        logger.info("[FT DEBUG] hypotheses: ", str(hypotheses[b]))
                         best_hyp = sorted(
                             hypotheses[b], key=lambda x: x[0], reverse=True)
                         score, pred = best_hyp[0]
