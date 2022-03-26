@@ -12,6 +12,8 @@ from tensorboardX import SummaryWriter
 from others.utils import rouge_results_to_str, test_rouge, tile
 from translate.beam import GNMTGlobalScorer
 
+from fact_factcc.factcc_caller import classify
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -310,9 +312,6 @@ class Translator(object):
             alpha = self.global_scorer.alpha
             length_penalty = ((5.0 + (step + 1)) / 6.0) ** alpha
             
-            # TODO Faza masukin fact caller buat penalty
-            fact_score = caller(decoder_input, source)
-
             # Flatten probs into a list of possibilities.
             curr_scores = log_probs / length_penalty
 
@@ -361,6 +360,9 @@ class Translator(object):
             end_condition = is_finished[:, 0].eq(1)
             # Save finished hypotheses.
             if is_finished.any():
+                # TODO Faza masukin fact caller buat penalty
+                
+                
                 predictions = alive_seq.view(-1, beam_size, alive_seq.size(-1))
                 for i in range(is_finished.size(0)):
                     b = batch_offset[i]
@@ -372,11 +374,14 @@ class Translator(object):
                         hypotheses[b].append((
                             topk_scores[i, j],
                             predictions[i, j, 1:]))
+                    
                     # TODO Faza evaluate with fact scorer
                     # If the batch reached the end, save the n_best hypotheses.
                     if end_condition[i]:
                         # TODO Faza order by fact score
                         logger.info("[FT DEBUG] hypotheses: ", str(hypotheses[b]))
+                        # fact_score = classify(batch.src, hypotheses[b])
+                        logger.info("[FT DEBUG] hypotheses: ", str(fact_score))
                         best_hyp = sorted(
                             hypotheses[b], key=lambda x: x[0], reverse=True)
                         score, pred = best_hyp[0]
