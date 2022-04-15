@@ -46,7 +46,7 @@ def train_abs_multi(args):
     # Create a thread to listen for errors in the child processes.
     error_queue = mp.SimpleQueue()
     error_handler = ErrorHandler(error_queue)
-
+    logger.info("[FT DEBUG] train_abs 49")
     # Train with multiprocessing.
     procs = []
     for i in range(nb_gpu):
@@ -331,7 +331,7 @@ def train_abs_single(args, device_id):
     torch.manual_seed(args.seed)
     random.seed(args.seed)
     torch.backends.cudnn.deterministic = True
-
+    logger.info("[FT DEBUG] train_abs 334")
     if device_id >= 0:
         torch.cuda.set_device(device_id)
         torch.cuda.manual_seed(args.seed)
@@ -379,5 +379,5 @@ def train_abs_single(args, device_id):
                           label_smoothing=args.label_smoothing)
 
     trainer = build_trainer(args, device_id, model, optim, train_loss)
-
+    logger.info("[FT DEBUG] train_abs 382")
     trainer.train(train_iter_fct, args.train_steps)

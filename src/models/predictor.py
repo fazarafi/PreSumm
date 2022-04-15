@@ -33,7 +33,7 @@ class Translator(object):
        model (:obj:`onmt.modules.NMTModel`):
           NMT model to use for translation
        fields (dict of Fields): data fields
-       beam_size (int): size of beam to use
+       [beam_size (int): size of beam to use
        n_best (int): number of translations produced
        max_length (int): maximum length output to produce
        global_scores (:obj:`GlobalScorer`):
@@ -167,7 +167,7 @@ class Translator(object):
                 translations = self.from_batch(batch_data)
 
                 for trans in translations:
-                    logger.info("\n")
+                    # logger.info("\n")
                     pred, gold, src = trans
                     pred_str = pred.replace('[unused0]', '').replace('[unused3]', '').replace('[PAD]', '').replace('[unused1]', '').replace(r' +', ' ').replace(' [unused2] ', '<q>').replace('[unused2]', '').strip()
                     gold_str = gold.strip()
@@ -360,8 +360,6 @@ class Translator(object):
             end_condition = is_finished[:, 0].eq(1)
             # Save finished hypotheses.
             if is_finished.any():
-                # TODO Faza masukin fact caller buat penalty
-                
                 
                 predictions = alive_seq.view(-1, beam_size, alive_seq.size(-1))
                 for i in range(is_finished.size(0)):
@@ -375,19 +373,32 @@ class Translator(object):
                             topk_scores[i, j],
                             predictions[i, j, 1:]))
                     
-                    # TODO Faza evaluate with fact scorer
+                    # TODO Faza evaluate with fact scorer`
                     # If the batch reached the end, save the n_best hypotheses.
                     if end_condition[i]:
                         # TODO Faza order by fact score
-                        logger.info("[FT DEBUG] hypotheses: ", str(hypotheses[b]))
-                        # fact_score = classify(batch.src, hypotheses[b])
-                        logger.info("[FT DEBUG] hypotheses: ", str(fact_score))
+                        # logger.info("[DEBUG FT] TYPE hypotheses: ", type(hypotheses[b]).__name__)
+                        # logger.info("[DEBUG FT] TYPE batch_src: ", type(batch.src).__name__)
+                        
+                        # logger.info("[DEBUG FT] hypotheses: ", str(hypotheses[b]))
+                        # logger.info("[DEBUG FT] batch_src: ", str(batch.src))
+
+
+                        # TODO Faza Find way to convert hypotheses and document into textual data -> preferred solution
+                        # or bongkar muat the feature in summac & factcc -> costly banget
+
+                        fact_score = classify(batch.src, hypotheses[b])
+                        logger.info("[DEBUG FT] fact_score: ", str(fact_score))
                         best_hyp = sorted(
                             hypotheses[b], key=lambda x: x[0], reverse=True)
                         score, pred = best_hyp[0]
 
                         results["scores"][b].append(score)
                         results["predictions"][b].append(pred)
+                    else:
+                        # TODO Faza Partial evaluation with model
+                        todo_ft = 0
+
                 non_finished = end_condition.eq(0).nonzero().view(-1)
                 # If all sentences are translated, no need to go further.
                 if len(non_finished) == 0:
