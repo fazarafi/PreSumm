@@ -2,7 +2,7 @@ import json, os, pandas as pd, numpy as np, csv
 from datasets import load_dataset
 from collections import Counter
 import requests, zipfile, tarfile
-import utils_scorer, utils_misc
+import fact_summac.utils_scorer, fact_summac.utils_misc
 
 # SummaC Benchmark
 class SummaCBenchmark:

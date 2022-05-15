@@ -53,14 +53,12 @@ def classify(document, summary):
 
     #DUMMY
 
-    document = "one was killed while resting in a hammock at a carwash . a second was dragged from his car and shot dead near the newspaper he had co-founded . when another was killed in front of her son , the criminals left a note : `` for your long tongue '' . journalists are being murdered in mexico and this is nothing new . this is one of the most dangerous countries for reporters , rights groups say , and more die here than in any other nation at peace . but even for a place so used to drugs-related violence and organised crime , the recent bloodshed has been shocking . seven journalists have been killed in the country so far this year , most shot by gunmen in broad daylight . yet virtually all cases of attacks on the press end up unsolved and , in many , corrupt officials are suspected of partnering with criminals . as the killings mount , is there anything that mexico can do to save its journalists ? miroslava breach used to say that corrupt politicians were more dangerous than drug traffickers . for almost 30 years , she investigated cases in which authorities and criminals appeared to work hand in hand in her native state of chihuahua , in northern mexico . last year , miros , as friends called her , reported for the national newspaper la jornada on the alleged links between organised crime and candidates standing in the local elections in several towns in western chihuahua - some located on lucrative drug-trafficking routes . for her enemies , she had crossed a line . `` sister , now i 'm really scared , '' her sister rosy recalled a tearful breach saying , as threats had increased and regularly mentioned her children . breach alerted the authorities but carried on , not knowing what else to do . `` she said that against a network of evil there was nothing that could be done , '' rosy said . then last march , as breach left home in the morning to take her 14-year-old son to school , gunmen shot her eight times . they left a note , reportedly carrying the initials of one of the bandits she had denounced and a message : `` por lengua larga , '' meaning for your long tongue . since 2000 , at least 106 journalists have been killed across mexico , according to rights group article 19 . exact numbers are hard to"
-    summary = "two journalists have been shot dead in the mexican state of chihuahua in what is believed to be the country 's worst-ever killings since the 2000-200 people were arrested and taken to school in the early hours of sunday morning and the other day ."
+    # document = "one was killed while resting in a hammock at a carwash . a second was dragged from his car and shot dead near the newspaper he had co-founded . when another was killed in front of her son , the criminals left a note : `` for your long tongue '' . journalists are being murdered in mexico and this is nothing new . this is one of the most dangerous countries for reporters , rights groups say , and more die here than in any other nation at peace . but even for a place so used to drugs-related violence and organised crime , the recent bloodshed has been shocking . seven journalists have been killed in the country so far this year , most shot by gunmen in broad daylight . yet virtually all cases of attacks on the press end up unsolved and , in many , corrupt officials are suspected of partnering with criminals . as the killings mount , is there anything that mexico can do to save its journalists ? miroslava breach used to say that corrupt politicians were more dangerous than drug traffickers . for almost 30 years , she investigated cases in which authorities and criminals appeared to work hand in hand in her native state of chihuahua , in northern mexico . last year , miros , as friends called her , reported for the national newspaper la jornada on the alleged links between organised crime and candidates standing in the local elections in several towns in western chihuahua - some located on lucrative drug-trafficking routes . for her enemies , she had crossed a line . `` sister , now i 'm really scared , '' her sister rosy recalled a tearful breach saying , as threats had increased and regularly mentioned her children . breach alerted the authorities but carried on , not knowing what else to do . `` she said that against a network of evil there was nothing that could be done , '' rosy said . then last march , as breach left home in the morning to take her 14-year-old son to school , gunmen shot her eight times . they left a note , reportedly carrying the initials of one of the bandits she had denounced and a message : `` por lengua larga , '' meaning for your long tongue . since 2000 , at least 106 journalists have been killed across mexico , according to rights group article 19 . exact numbers are hard to"
+    # summary = "two journalists have been shot dead in the mexican state of chihuahua in what is believed to be the country 's worst-ever killings since the 2000-200 people were arrested and taken to school in the early hours of sunday morning and the other day ."
     
     
-    logger.info("[FT DEBUG] doc: ", str(document))
-    logger.info("[FT DEBUG] sum: ", str(summary))
-    # TODO remove for dummy
-    # return 0.2
+    # logger.info("[FT DEBUG] doc: ", str(document))
+    # logger.info("[FT DEBUG] sum: ", str(summary))
     
     cfg = load_config()
 
@@ -87,10 +85,10 @@ def evaluate(config, model, tokenizer, document, summary, prefix=""):
     # TODO Faza construct batch for summary and document
     # batch = make_model_input_single(config, document, summary)
 
-    config["eval_batch_size"] = config["per_gpu_eval_batch_size"] * max(1, config["n_gpu"])
+    config["eval_batch_size"] = 1 * max(1, config["n_gpu"])
     # Note that DistributedSampler samples randomly
     eval_sampler = SequentialSampler(eval_dataset) if config["local_rank"] == -1 else DistributedSampler(eval_dataset)
-    eval_dataloader = DataLoader(eval_dataset, sampler=eval_sampler, batch_size=config["eval_batch_size"])
+    eval_dataloader = DataLoader(eval_dataset, sampler=eval_sampler, batch_size=1)
 
     preds = None
     out_label_ids = None

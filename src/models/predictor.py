@@ -12,7 +12,8 @@ from tensorboardX import SummaryWriter
 from others.utils import rouge_results_to_str, test_rouge, tile
 from translate.beam import GNMTGlobalScorer
 
-from fact_factcc.factcc_caller import classify
+from fact_factcc.factcc_caller import classify as factcc_cls
+from fact_summac.summac_caller import classify as summac_cls
 
 import logging
 logger = logging.getLogger(__name__)
@@ -84,7 +85,6 @@ class Translator(object):
                 "beam_parent_ids": [],
                 "scores": [],
                 "log_probs": []}
-
     def _build_target_tokens(self, pred):
         # vocab = self.fields["tgt"].vocab
         tokens = []
@@ -167,14 +167,9 @@ class Translator(object):
                 translations = self.from_batch(batch_data)
 
                 for trans in translations:
-                    # logger.info("\n")
                     pred, gold, src = trans
                     pred_str = pred.replace('[unused0]', '').replace('[unused3]', '').replace('[PAD]', '').replace('[unused1]', '').replace(r' +', ' ').replace(' [unused2] ', '<q>').replace('[unused2]', '').strip()
                     gold_str = gold.strip()
-                    # logger.info("[DEBUG FT] Src: " + str(src))
-                    # logger.info("[DEBUG FT] Pred_str: " + str(pred_str))
-                    # logger.info("[DEBUG FT] Gold_str: " + str(gold_str))
-                    # logger.info("\n\n")
                     if(self.args.recall_eval):
                         _pred_str = ''
                         gap = 1e3
@@ -188,8 +183,6 @@ class Translator(object):
                             else:
                                 gap = can_gap
                                 _pred_str = can_pred_str
-
-
 
                         # pred_str = ' '.join(pred_str.split()[:len(gold_str.split())])
                     # self.raw_can_out_file.write(' '.join(pred).strip() + '\n')
@@ -380,18 +373,47 @@ class Translator(object):
                         # logger.info("[DEBUG FT] TYPE hypotheses: ", type(hypotheses[b]).__name__)
                         # logger.info("[DEBUG FT] TYPE batch_src: ", type(batch.src).__name__)
                         
-                        # logger.info("[DEBUG FT] hypotheses: ", str(hypotheses[b]))
-                        # logger.info("[DEBUG FT] batch_src: ", str(batch.src))
+                        # logger.info("[DEBUG FT] hypotheses[b]: " + str(hypotheses[b]))
+                        # logger.info("[DEBUG FT] hypotheses[b] keys: " + str(hypotheses[b]))
+                        
+                        # logger.info("[DEBUG FT] batch_s[[rc: " + str(batch.src))
 
 
                         # TODO Faza Find way to convert hypotheses and document into textual data -> preferred solution
                         # or bongkar muat the feature in summac & factcc -> costly banget
 
-                        fact_score = classify(batch.src, hypotheses[b])
-                        logger.info("[DEBUG FT] fact_score: ", str(fact_score))
+                        for i in range(len(hypotheses[b])):
+                            logger.info("[FAZA] Factual evaluation " + str(i+1) + " of " + str(len(hypotheses[b])))
+                            el = hypotheses[b][i]
+                            score, pred = el
+                            
+                            factcc_score = factcc_cls(self.convert_id_to_text(batch.src[0]), self.convert_id_to_text(pred))
+                            summac_score = 0.5 # summac_cls(self.convert_id_to_text(batch.src[0]), self.convert_id_to_text(pred))
+                            
+                            logger.info("[DEBUG FT] FACTCC: " + str(factcc_score))
+                            logger.info("[DEBUG FT] SUMMAC: " + str(summac_score))
+                            
+                            final_score = (factcc_score + summac_score)/2
+
+                            new_tup = list(el)
+                            new_tup.append(final_score)
+                            el = tuple(new_tup)
+                            hypotheses[b][i] = el
+                            
+
+                        # logger.info("[DEBUG FT] hypotheses[b]: " + str(hypotheses[b]))
                         best_hyp = sorted(
                             hypotheses[b], key=lambda x: x[0], reverse=True)
-                        score, pred = best_hyp[0]
+                        logger.info("[DEBUG FT] best_hyp[0]: " + str(best_hyp[0]))
+                        score, pred, fact = best_hyp[0]
+
+                        # pred_text = self._build_target_tokens(pred)
+
+                        logger.info("[DEBUG FT] PRED pred: " + str(pred))
+
+                        # pred_text = self.convert_id_to_text(pred)
+                        # # logger.info("[DEBUG FT] TEXT pred_text: " + str(pred_text))
+                        
 
                         results["scores"][b].append(score)
                         results["predictions"][b].append(pred)
@@ -416,6 +438,14 @@ class Translator(object):
                 lambda state, dim: state.index_select(dim, select_indices))
 
         return results
+
+    def convert_id_to_text(self, token_ids):
+        # Convert token_ids to text for factual consistency scoring
+        text = self.vocab.convert_ids_to_tokens([int(n) for n in token_ids])
+        text = ' '.join(text).replace(' ##','')
+        text = text.replace('[unused0]', '').replace('[unused3]', '').replace('[PAD]', '').replace('[unused1]', '').replace(r' +', ' ').replace(' [unused2] ', '<q>').replace('[unused2]', '').strip()
+        
+        return text
 
 
 class Translation(object):

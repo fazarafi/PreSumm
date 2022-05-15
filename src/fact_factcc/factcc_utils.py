@@ -197,8 +197,8 @@ def convert_examples_to_features(examples, label_list, max_seq_length,
 
     features = []
     for (ex_index, example) in enumerate(examples):
-        if ex_index % 10000 == 0:
-            logger.info("Writing example %d of %d" % (ex_index, len(examples)))
+        # if ex_index % 10000 == 0:
+        #     logger.info("Writing example %d of %d" % (ex_index, len(examples)))
 
         tokens_a = tokenizer.tokenize(example.text_a)
 
@@ -304,19 +304,19 @@ def convert_examples_to_features(examples, label_list, max_seq_length,
         else:
             raise KeyError(output_mode)
 
-        if ex_index < 3:
-            logger.info("*** Example ***")
-            logger.info("guid: %s" % (example.guid))
-            logger.info("tokens: %s" % " ".join([str(x) for x in tokens]))
-            logger.info("input_ids: %s" % " ".join([str(x) for x in input_ids]))
-            logger.info("input_mask: %s" % " ".join([str(x) for x in input_mask]))
-            logger.info("ext mask: %s" % " ".join([str(x) for x in extraction_mask]))
-            logger.info("ext start: %d" % extraction_start_ids)
-            logger.info("ext end: %d" % extraction_end_ids)
-            logger.info("aug mask: %s" % " ".join([str(x) for x in augmentation_mask]))
-            logger.info("aug start: %d" % augmentation_start_ids)
-            logger.info("aug end: %d" % augmentation_end_ids)
-            logger.info("label: %d" % label_id)
+        # if ex_index < 3:
+        #     logger.info("*** Example ***")
+        #     logger.info("guid: %s" % (example.guid))
+        #     logger.info("tokens: %s" % " ".join([str(x) for x in tokens]))
+        #     logger.info("input_ids: %s" % " ".join([str(x) for x in input_ids]))
+        #     logger.info("input_mask: %s" % " ".join([str(x) for x in input_mask]))
+        #     logger.info("ext mask: %s" % " ".join([str(x) for x in extraction_mask]))
+        #     logger.info("ext start: %d" % extraction_start_ids)
+        #     logger.info("ext end: %d" % extraction_end_ids)
+        #     logger.info("aug mask: %s" % " ".join([str(x) for x in augmentation_mask]))
+        #     logger.info("aug start: %d" % augmentation_start_ids)
+        #     logger.info("aug end: %d" % augmentation_end_ids)
+        #     logger.info("label: %d" % label_id)
 
         extraction_start_ids = min(extraction_start_ids, 511)
         extraction_end_ids = min(extraction_end_ids, 511)

@@ -1,5 +1,5 @@
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
-import nltk, utils_misc, numpy as np, torch, os, json
+import nltk, fact_summac.utils_misc, numpy as np, torch, os, json
 
 model_map = {
     "snli-base": {"model_card": "boychaboy/SNLI_roberta-base", "entailment_idx": 0, "contradiction_idx": 2},
@@ -94,7 +94,12 @@ class SummaCImager:
             return self.split_sentences(text) + self.split_paragraphs(text)
 
     def build_image(self, original, generated):
+        if str(type(generated).__name__) == "list":
+            generated = tuple(generated)
+
         cache_key = (original, generated)
+        print("[DEBUG FT] " + str(type(original).__name__))
+        print("[DEBUG FT] " + str(type(generated).__name__))
         if self.use_cache and cache_key in self.cache:
             cached_image = self.cache[cache_key]
             cached_image = cached_image[:, :self.max_doc_sents, :]
