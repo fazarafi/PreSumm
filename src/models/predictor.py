@@ -12,11 +12,19 @@ from tensorboardX import SummaryWriter
 from others.utils import rouge_results_to_str, test_rouge, tile
 from translate.beam import GNMTGlobalScorer
 
-from fact_factcc.factcc_caller import classify as factcc_cls
+# from fact_factcc.factcc_caller  classify as factcc_cls
+from fact_factcc.factcc_caller_model import FactccCaller
+
 from fact_summac.summac_caller import classify as summac_cls
+from fact_feqa.feqa_caller import classify as feqa_cls
+
+from fact_0_general.model_baseline_evaluator import BaselineScorer
 
 import logging
 logger = logging.getLogger(__name__)
+
+import time
+
 
 def build_predictor(args, tokenizer, symbols, model, logger=None):
     scorer = GNMTGlobalScorer(args.alpha,length_penalty='wu')
@@ -75,6 +83,9 @@ class Translator(object):
         self.beam_trace = self.dump_beam != ""
         self.beam_accum = None
 
+        # TODO FT weight
+        self.weight =
+
         tensorboard_log_dir = args.model_path
 
         self.tensorboard_writer = SummaryWriter(tensorboard_log_dir, comment="Unmt")
@@ -85,6 +96,7 @@ class Translator(object):
                 "beam_parent_ids": [],
                 "scores": [],
                 "log_probs": []}
+
     def _build_target_tokens(self, pred):
         # vocab = self.fields["tgt"].vocab
         tokens = []
@@ -283,7 +295,12 @@ class Translator(object):
         results["gold_score"] = [0] * batch_size
         results["batch"] = batch
 
+        feqa_scorer = BaselineScorer(model="feqa")
+        factcc_scorer = FactccCaller()
+
         for step in range(max_length):
+            logger.info("[DEBUG FT] PREDICT STEP " + str(step+1) + " of " + str(max_length))
+
             decoder_input = alive_seq[:, -1].view(1, -1)
 
             # Decoder forward.
@@ -378,38 +395,68 @@ class Translator(object):
                         
                         # logger.info("[DEBUG FT] batch_s[[rc: " + str(batch.src))
 
-
-                        # TODO Faza Find way to convert hypotheses and document into textual data -> preferred solution
-                        # or bongkar muat the feature in summac & factcc -> costly banget
-
                         for i in range(len(hypotheses[b])):
-                            logger.info("[FAZA] Factual evaluation " + str(i+1) + " of " + str(len(hypotheses[b])))
+                            logger.info("[DEBUG FT] Factual evaluation " + str(i+1) + " of " + str(len(hypotheses[b])))
                             el = hypotheses[b][i]
                             score, pred = el
                             
-                            factcc_score = factcc_cls(self.convert_id_to_text(batch.src[0]), self.convert_id_to_text(pred))
-                            summac_score = 0.5 # summac_cls(self.convert_id_to_text(batch.src[0]), self.convert_id_to_text(pred))
-                            
-                            logger.info("[DEBUG FT] FACTCC: " + str(factcc_score))
-                            logger.info("[DEBUG FT] SUMMAC: " + str(summac_score))
-                            
-                            final_score = (factcc_score + summac_score)/2
+                            docs_hypo = self.convert_id_to_text(batch.src[0])
+                            summary_hypo = self.convert_id_to_text(pred)
 
+                            final_score = 0
+                            # logger.info("[DEBUG FT] hypotheses[b][+1][1]: "+str(hypotheses[b][i][1]))
+                            # logger.info("[DEBUG FT] hypotheses[b][-1][1]: "+str(hypotheses[b][i-1][1]))
+
+                            if (i>7):
+                                logger.info("[DEBUG FT] SKIPPP ke "+str(i+1))
+                                final_score = hypotheses[b][i-1][2]
+                            # if ((i > 0)  and (torch.equal(hypotheses[b][i][1], hypotheses[b][i-1][1]))):
+                            #     final_score = hypotheses[b][i-1][2]
+                            #     logger.info("[DEBUG FT] SAMAAA " + str(factcc_score)+" ke "+str(i+1))
+                            else:
+                                start_ms = int(round(time.time() * 1000))
+                                
+                                # factcc_score = factcc_cls(docs_hypo, summary_hypo)
+                                factcc_score = factcc_scorer.classify(docs_hypo, summary_hypo)
+                                model_1_ms = int(round(time.time() * 1000))
+
+                                # summac_score = summac_cls(docs_hypo, summary_hypo)
+                                model_2_ms = int(round(time.time() * 1000))
+
+                                # feqa_score = feqa_cls(docs_hypo, summary_hypo)
+                                feqa_score = feqa_scorer.score([docs_hypo], [summary_hypo])['scores'][0]
+                                model_3_ms = int(round(time.time() * 1000))
+
+                                logger.info("[DEBUG FT] FACTCC: " + str(factcc_score))
+                                logger.info("in "+ str(model_1_ms-start_ms) +" ms\n")
+                                # logger.info("[DEBUG FT] SUMMAC: " + str(summac_score))
+                                # logger.info("in "+ str(model_2_ms-model_1_ms) +" ms\n")
+                                logger.info("[DEBUG FT] FEQA: " + str(feqa_score))
+                                logger.info("in "+ str(model_3_ms-model_2_ms) +" ms\n")
+                                
+                                # final_score = (factcc_score + summac_score + feqa_score)/3
+                                # final_score = (factcc_score + summac_score)/2
+                                # final_score = (summac_score + feqa_score)/2
+                                final_score = (factcc_score + feqa_score)/2
+                                # final_score = factcc_score
+                                # final_score = feqa_score
+                                # final_score = summac_score
+                            
+                            logger.info("[DEBUG FT] Final SCORE: " + str(final_score))
                             new_tup = list(el)
                             new_tup.append(final_score)
                             el = tuple(new_tup)
                             hypotheses[b][i] = el
-                            
 
                         # logger.info("[DEBUG FT] hypotheses[b]: " + str(hypotheses[b]))
                         best_hyp = sorted(
-                            hypotheses[b], key=lambda x: x[0], reverse=True)
+                            hypotheses[b], key=lambda x: x[2], reverse=True)
                         logger.info("[DEBUG FT] best_hyp[0]: " + str(best_hyp[0]))
                         score, pred, fact = best_hyp[0]
 
                         # pred_text = self._build_target_tokens(pred)
 
-                        logger.info("[DEBUG FT] PRED pred: " + str(pred))
+                        logger.info("[DEBUG FT] PRED pred: " + str(fact))
 
                         # pred_text = self.convert_id_to_text(pred)
                         # # logger.info("[DEBUG FT] TEXT pred_text: " + str(pred_text))

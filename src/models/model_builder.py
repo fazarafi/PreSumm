@@ -36,7 +36,6 @@ def build_optim(args, model, checkpoint):
 
     optim.set_parameters(list(model.named_parameters()))
 
-
     return optim
 
 def build_optim_bert(args, model, checkpoint):
@@ -98,9 +97,7 @@ def build_optim_dec(args, model, checkpoint):
     params = [(n, p) for n, p in list(model.named_parameters()) if not n.startswith('bert.model')]
     optim.set_parameters(params)
 
-
     return optim
-
 
 def get_generator(vocab_size, dec_hidden_size, device):
     gen_func = nn.LogSoftmax(dim=-1)

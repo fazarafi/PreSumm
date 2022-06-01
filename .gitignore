@@ -1,3 +1,5 @@
 **/__pycache__/*
 temp/*
 src/fact_factcc/factcc-checkpoint
+
+src/cached**

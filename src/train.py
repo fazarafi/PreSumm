@@ -13,7 +13,6 @@ from train_extractive import train_ext, validate_ext, test_ext
 model_flags = ['hidden_size', 'ff_size', 'heads', 'emb_size', 'enc_layers', 'enc_hidden_size', 'enc_ff_size',
                'dec_layers', 'dec_hidden_size', 'dec_ff_size', 'encoder', 'ff_actv', 'use_interval']
 
-
 def str2bool(v):
     if v.lower() in ('yes', 'true', 't', 'y', '1'):
         return True
@@ -115,8 +114,10 @@ if __name__ == '__main__':
 
     init_logger(args.log_file)
     device = "cpu" if args.visible_gpus == '-1' else "cuda"
-    device_id = 0 if device == "cuda" else -1
-
+    device_id = 0 if device == "cuda" else -1 
+    
+    print("[DEBUG FT] Device: " + str(device))
+    print("[DEBUG FT] GPU RANKS: " + str(args.gpu_ranks))
     if (args.task == 'abs'):
         if (args.mode == 'train'):
             train_abs(args, device_id)
