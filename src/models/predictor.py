@@ -6,6 +6,12 @@ import os
 import math
 
 import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+from torch.autograd import Variable
+
+
 
 from tensorboardX import SummaryWriter
 
@@ -14,10 +20,8 @@ from translate.beam import GNMTGlobalScorer
 
 # from fact_factcc.factcc_caller  classify as factcc_cls
 from fact_factcc.factcc_caller_model import FactccCaller
-
 from fact_summac.summac_caller import classify as summac_cls
 from fact_feqa.feqa_caller import classify as feqa_cls
-
 from fact_0_general.model_baseline_evaluator import BaselineScorer
 
 import logging
@@ -25,6 +29,7 @@ logger = logging.getLogger(__name__)
 
 import time
 
+LEARNING_RATE = 0.01
 
 def build_predictor(args, tokenizer, symbols, model, logger=None):
     scorer = GNMTGlobalScorer(args.alpha,length_penalty='wu')
@@ -83,9 +88,6 @@ class Translator(object):
         self.beam_trace = self.dump_beam != ""
         self.beam_accum = None
 
-        # TODO FT weight
-        self.weight =
-
         tensorboard_log_dir = args.model_path
 
         self.tensorboard_writer = SummaryWriter(tensorboard_log_dir, comment="Unmt")
@@ -96,6 +98,14 @@ class Translator(object):
                 "beam_parent_ids": [],
                 "scores": [],
                 "log_probs": []}
+
+        # Fact 
+        with torch.enable_grad():
+            self.fact_model = FactNet()     
+            self.optimizer = optim.SGD(self.fact_model.parameters(), lr=LEARNING_RATE)
+            self.factcc_scorer = FactccCaller()
+        
+
 
     def _build_target_tokens(self, pred):
         # vocab = self.fields["tgt"].vocab
@@ -169,7 +179,9 @@ class Translator(object):
 
         # pred_results, gold_results = [], []
         ct = 0
+        
         with torch.no_grad():
+
             for batch in data_iter:
                 if(self.args.recall_eval):
                     gold_tgt_len = batch.tgt.size(1)
@@ -295,12 +307,13 @@ class Translator(object):
         results["gold_score"] = [0] * batch_size
         results["batch"] = batch
 
-        feqa_scorer = BaselineScorer(model="feqa")
-        factcc_scorer = FactccCaller()
+        with torch.enable_grad():
+            criterion = nn.MSELoss()
+
+        abc = torch.tensor([1.0], requires_grad=True) #TODO remove for grad status
+                        
 
         for step in range(max_length):
-            logger.info("[DEBUG FT] PREDICT STEP " + str(step+1) + " of " + str(max_length))
-
             decoder_input = alive_seq[:, -1].view(1, -1)
 
             # Decoder forward.
@@ -386,88 +399,121 @@ class Translator(object):
                     # TODO Faza evaluate with fact scorer`
                     # If the batch reached the end, save the n_best hypotheses.
                     if end_condition[i]:
-                        # TODO Faza order by fact score
-                        # logger.info("[DEBUG FT] TYPE hypotheses: ", type(hypotheses[b]).__name__)
-                        # logger.info("[DEBUG FT] TYPE batch_src: ", type(batch.src).__name__)
                         
-                        # logger.info("[DEBUG FT] hypotheses[b]: " + str(hypotheses[b]))
-                        # logger.info("[DEBUG FT] hypotheses[b] keys: " + str(hypotheses[b]))
-                        
-                        # logger.info("[DEBUG FT] batch_s[[rc: " + str(batch.src))
-
-                        for i in range(len(hypotheses[b])):
-                            logger.info("[DEBUG FT] Factual evaluation " + str(i+1) + " of " + str(len(hypotheses[b])))
-                            el = hypotheses[b][i]
-                            score, pred = el
+                        with torch.enable_grad():
                             
                             docs_hypo = self.convert_id_to_text(batch.src[0])
-                            summary_hypo = self.convert_id_to_text(pred)
-
-                            final_score = 0
-                            # logger.info("[DEBUG FT] hypotheses[b][+1][1]: "+str(hypotheses[b][i][1]))
-                            # logger.info("[DEBUG FT] hypotheses[b][-1][1]: "+str(hypotheses[b][i-1][1]))
-
-                            if (i>7):
-                                logger.info("[DEBUG FT] SKIPPP ke "+str(i+1))
-                                final_score = hypotheses[b][i-1][2]
-                            # if ((i > 0)  and (torch.equal(hypotheses[b][i][1], hypotheses[b][i-1][1]))):
-                            #     final_score = hypotheses[b][i-1][2]
-                            #     logger.info("[DEBUG FT] SAMAAA " + str(factcc_score)+" ke "+str(i+1))
-                            else:
-                                start_ms = int(round(time.time() * 1000))
+                            summary_tgt = batch.tgt_str[i]
                                 
-                                # factcc_score = factcc_cls(docs_hypo, summary_hypo)
-                                factcc_score = factcc_scorer.classify(docs_hypo, summary_hypo)
-                                model_1_ms = int(round(time.time() * 1000))
-
-                                # summac_score = summac_cls(docs_hypo, summary_hypo)
-                                model_2_ms = int(round(time.time() * 1000))
-
-                                # feqa_score = feqa_cls(docs_hypo, summary_hypo)
-                                feqa_score = feqa_scorer.score([docs_hypo], [summary_hypo])['scores'][0]
-                                model_3_ms = int(round(time.time() * 1000))
-
-                                logger.info("[DEBUG FT] FACTCC: " + str(factcc_score))
-                                logger.info("in "+ str(model_1_ms-start_ms) +" ms\n")
-                                # logger.info("[DEBUG FT] SUMMAC: " + str(summac_score))
-                                # logger.info("in "+ str(model_2_ms-model_1_ms) +" ms\n")
-                                logger.info("[DEBUG FT] FEQA: " + str(feqa_score))
-                                logger.info("in "+ str(model_3_ms-model_2_ms) +" ms\n")
+                            for k in range(len(hypotheses[b])):
+                                logger.info("[DEBUG FT] Factual evaluation " + str(k+1) + " of " + str(len(hypotheses[b])))
+                                el = hypotheses[b][k]
+                                score, pred = el
                                 
-                                # final_score = (factcc_score + summac_score + feqa_score)/3
-                                # final_score = (factcc_score + summac_score)/2
-                                # final_score = (summac_score + feqa_score)/2
-                                final_score = (factcc_score + feqa_score)/2
-                                # final_score = factcc_score
-                                # final_score = feqa_score
-                                # final_score = summac_score
+                                summary_hypo = self.convert_id_to_text(pred)
+                                
+                                
+                                final_score = 0
+                                
+                                if (k>7):
+                                    # logger.info("[DEBUG FT] SKIPPP ke "+str(k+1))
+                                    final_score = hypotheses[b][k-1][2]
+                                # if ((k > 0)  and (torch.equal(hypotheses[b][k][1], hypotheses[b][k-1][1]))):
+                                #     final_score = hypotheses[b][k-1][2]
+                                #     logger.info("[DEBUG FT] SAMAAA " + str(factcc_score)+" ke "+str(k+1))
+                                else:
+                                    start_ms = int(round(time.time() * 1000))
+                                    
+                                    # factcc_score = factcc_cls(docs_hypo, summary_hypo)
+                                    factcc_score = self.factcc_scorer.classify(docs_hypo, summary_hypo)
+                                    model_1_ms = int(round(time.time() * 1000))
+
+                                    summac_score = summac_cls(docs_hypo, summary_hypo)
+                                    model_2_ms = int(round(time.time() * 1000))
+
+                                    # feqa_score = self.feqa_scorer.score([docs_hypo], [summary_hypo])['scores'][0]
+                                    model_3_ms = int(round(time.time() * 1000))
+
+                                    logger.info("[DEBUG FT] FACTCC: " + str(factcc_score))
+                                    logger.info("in "+ str(model_1_ms-start_ms) +" ms\n")
+                                    logger.info("[DEBUG FT] SUMMAC: " + str(summac_score))
+                                    logger.info("in "+ str(model_2_ms-model_1_ms) +" ms\n")
+                                    # logger.info("[DEBUG FT] FEQA: " + str(feqa_score))
+                                    # logger.info("in "+ str(model_3_ms-model_2_ms) +" ms\n")
+                                    
+                                    fact_in = torch.tensor([float(factcc_score), float(summac_score)], requires_grad=True)
+                                    final_score = self.fact_model(fact_in)
+                                    logger.info("[DEBUG FT] Fact Score: " + str(final_score))
+                                    
+                                    # final_score = (factcc_score + summac_score)/2
+                                    
+                                new_tup = list(el)
+                                new_tup.append(final_score)
+                                el = tuple(new_tup)
+                                hypotheses[b][k] = el
+
+                            best_hyp = sorted(
+                                hypotheses[b], key=lambda x: x[2].item(), reverse=True)
+                            score, pred, fact = best_hyp[0]
+
+                            # pred_text = self._build_target_tokens(pred)
+
+                            logger.info("[DEBUG FT] Final score PRED: " + str(fact))
                             
-                            logger.info("[DEBUG FT] Final SCORE: " + str(final_score))
-                            new_tup = list(el)
-                            new_tup.append(final_score)
-                            el = tuple(new_tup)
-                            hypotheses[b][i] = el
-
-                        # logger.info("[DEBUG FT] hypotheses[b]: " + str(hypotheses[b]))
-                        best_hyp = sorted(
-                            hypotheses[b], key=lambda x: x[2], reverse=True)
-                        logger.info("[DEBUG FT] best_hyp[0]: " + str(best_hyp[0]))
-                        score, pred, fact = best_hyp[0]
-
-                        # pred_text = self._build_target_tokens(pred)
-
-                        logger.info("[DEBUG FT] PRED pred: " + str(fact))
-
-                        # pred_text = self.convert_id_to_text(pred)
-                        # # logger.info("[DEBUG FT] TEXT pred_text: " + str(pred_text))
                         
+                            
+                            results["scores"][b].append(score)
+                            results["predictions"][b].append(pred)
 
-                        results["scores"][b].append(score)
-                        results["predictions"][b].append(pred)
+                            
+                            # Calculate gold
+                            gold_score_1 = self.factcc_scorer.classify(docs_hypo, summary_tgt)
+                            gold_score_2 = summac_cls(docs_hypo, summary_tgt)
+                            # gold_score_3 = self.feqa_scorer.score([docs_hypo], [summary_tgt])['scores'][0]
+                            
+                            # LOSS Calculation and weight updating
+                            
+                            # 5. Reset the gradients to zero
+                            self.optimizer.zero_grad()
+                            
+
+                            # 1. Generate prediction
+                            target = self.fact_model(torch.tensor([float(gold_score_1), float(gold_score_2)]))
+
+                            
+                            # 2. Calculate loss
+                            loss = criterion(fact, target)
+                            logger.info("[DEBUG FT] LOSS: " + str(loss))
+
+                            # loss = Variable(loss, requires_grad = True) TODO Remove
+
+                            # 3. Compute gradients
+                            loss.backward(gradient=loss.grad, retain_graph=True)  
+
+
+                            # 4. Update parameters using gradients
+                            self.optimizer.step() 
+
+                            
+                            self.optimizer = optim.SGD(self.fact_model.parameters(), lr=LEARNING_RATE)
+
+                            
+                            logger.info("[DEBUG FT] model Params")
+                            for name, param in self.fact_model.named_parameters():
+                                if param.requires_grad:
+                                    logger.info(str(name) + " --- " + str(param))
+                            
+
+                            for name, param in self.fact_model.named_parameters():
+                                if param.grad is not None:
+                                    logger.info("[DEBUG FT] 4 PARAMS "+ str(name) + " - sum "+ str(param.grad.sum()))
+                                else: 
+                                    logger.info("[DEBUG FT] 4 PARAMS "+ str(name) + " - grad "+ str(param.grad))
+
                     else:
                         # TODO Faza Partial evaluation with model
                         todo_ft = 0
-
+                    
                 non_finished = end_condition.eq(0).nonzero().view(-1)
                 # If all sentences are translated, no need to go further.
                 if len(non_finished) == 0:
@@ -493,8 +539,7 @@ class Translator(object):
         text = text.replace('[unused0]', '').replace('[unused3]', '').replace('[PAD]', '').replace('[unused1]', '').replace(r' +', ' ').replace(' [unused2] ', '<q>').replace('[unused2]', '').strip()
         
         return text
-
-
+    
 class Translation(object):
     """
     Container for a translated sentence.
@@ -545,3 +590,34 @@ class Translation(object):
                 output += "[{:.4f}] {}\n".format(score, sent)
 
         return output
+
+# class FactNet(nn.Module):
+#     def __init__(self):
+#         super(FactNet, self).__init__()
+#         self.fc = nn.Linear(2, 1, bias=False)     
+#     def forward(self, x):
+#         x = self.fc(x)
+#         return x
+ 
+    
+class FactNet(nn.Module):
+    def __init__(self):
+        super(FactNet, self).__init__()
+        self.layer_1 = nn.Linear(2, 1, bias=True)
+        # self.weight = nn.Parameter(torch.Tensor(1, 2), requires_grad = True)
+        # self.weight = nn.init.xavier_uniform_(self.weight)
+       
+    def forward(self, x):
+        x = torch.sigmoid(self.layer_1(x))
+        return x
+
+    # def __init__(self):
+    #     super(FactNet, self).__init__()
+    #     self.layer_1 = nn.Linear(2, 1)
+    #     nn.init.kaiming_uniform_(self.layer_1.weight, nonlinearity="relu")
+    #     self.layer_2 = nn.Linear(1, 1)
+       
+    # def forward(self, x):
+    #     x = torch.nn.functional.relu(self.layer_1(x))
+    #     x = torch.nn.functional.sigmoid(self.layer_2(x))
+    #     return x
